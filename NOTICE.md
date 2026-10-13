@@ -42,7 +42,12 @@ The release asset `AP-boot-beyond2qlte-droidspaces.tar.md5` is an Odin AP file h
 * `boot.img`: the kernel built from the sources above, holding the compressed kernel, the appended
   DTB, and an AVB0 footer.
 * `vbmeta.img`: an AVB structure with verification disabled (`flags 3`), required to boot an unsigned
-  kernel on this device.
+  kernel on this device. This one file is not built here and did not come off the device. It is signed
+  with the public AOSP AVB test key (`testkey_rsa4096`, key SHA-1
+  `2597c218aae470a130f61162feaae70afd97f011`), and its descriptors and `com.android.build.*` properties
+  describe an **SM-G975U** (`beyond2qltesq`) Android 11 build, `G975USQS4FUA1`, which is not this model.
+  Its `boot` hash descriptor therefore does not match the `boot.img` above. `flags 3` is what makes that
+  harmless: nothing on the device is verified, which is the whole reason an unsigned kernel boots at all.
 
 It deliberately does **not** contain `recovery.img`: only `boot` and `vbmeta` need to change, and the
 smaller archive is easier to verify. Keep your own stock firmware (BL/AP/CP/CSC for your model and
