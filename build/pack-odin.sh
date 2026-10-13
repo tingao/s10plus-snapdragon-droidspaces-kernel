@@ -5,8 +5,9 @@
 #
 # Produces AP-boot-beyond2qlte-droidspaces.tar.md5 containing boot.img and vbmeta.img.
 #
-# It needs three inputs that come from outside this repository, and they are not redistributed
-# here:
+# It needs four inputs that come from outside this repository. None of them are kept in the
+# repository, but the archive it produces does contain the packed boot.img and a copy of the
+# vbmeta:
 #
 #   1. a boot.img from the SAME device to use as a template for the Android boot header
 #      (a LineageOS boot image for beyond2qlte is what was used). magiskboot unpacks it, the kernel
@@ -14,6 +15,10 @@
 #   2. magiskboot           - from Magisk; unpacks/repacks the Android boot image.
 #   3. avbtool.py           - from AOSP external/avb; writes the AVB footer that lets an unsigned
 #                             kernel boot.
+#   4. a vbmeta.img with verification disabled (flags 3), copied into the archive as it is. It is
+#      an already-signed AVB structure, so its hash descriptors describe the boot and dtbo images
+#      it was signed for rather than the boot.img built above, and it carries firmware fingerprint
+#      properties from whichever build it came from.
 #
 # Set these to your own paths:
 MAGISKBOOT=${MAGISKBOOT:-/path/to/magiskboot}
