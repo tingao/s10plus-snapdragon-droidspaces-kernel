@@ -1,0 +1,27 @@
+# build output
+out/
+*.o
+*.cmd
+*.ko
+*.mod
+*.mod.c
+Image
+Image-dtb
+Image.gz
+Image.gz-dtb
+vmlinux
+System.map
+modules.order
+Module.symvers
+.tmp_versions/
+
+# packing work dirs (these hold the template boot.img and generated images)
+pack/
+*.tar
+*.img
+
+# editor / OS noise
+.DS_Store
+Thumbs.db
+*.swp
+*~
