@@ -23,6 +23,10 @@ DEFCONFIG=beyond2qlte_droidspaces_defconfig
 export KBUILD_BUILD_USER="${KBUILD_BUILD_USER:-builder}"
 export KBUILD_BUILD_HOST="${KBUILD_BUILD_HOST:-localhost}"
 
+# A fixed build date, for the same reason and for reproducibility: without it the kernel carries
+# the moment you happened to build it, and two builds of the same tree give different images.
+export KBUILD_BUILD_TIMESTAMP="${KBUILD_BUILD_TIMESTAMP:-2026-01-01 00:00:00 UTC}"
+
 CLANG="$TC/llvm-arm-toolchain-ship/10.0.9/bin/clang"
 CROSS="$TC/gcc-cfp/gcc-cfp-single/aarch64-linux-android-4.9/bin/aarch64-linux-android-"
 export PATH="$TC/llvm-arm-toolchain-ship/10.0.9/bin:$PATH"

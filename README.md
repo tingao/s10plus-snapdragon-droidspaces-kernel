@@ -89,7 +89,13 @@ and what each failure means.
    ```sh
    python3 build/verify-tarmd5.py AP-boot-beyond2qlte-droidspaces.tar.md5
    # ... VERDICT : ODIN WILL ACCEPT THIS
+
+   sha256sum AP-boot-beyond2qlte-droidspaces.tar.md5
+   # ... 51f04c2ba4f9e60f5b72dae7cedf8ee434c25cd68c02e315b4c5b90dc590bb78
    ```
+
+   That digest is for the v1.0.0 asset, 67,123,270 bytes. The `.tar.md5` trailer covers the tar body
+   only, so it cannot tell you the file itself arrived intact; the sha256 can.
 
 3. In Odin, load it in the AP slot and leave BL, CP and CSC empty.
 4. In the Options tab, tick Auto Reboot and F.Reset Time, and untick everything else. In particular,

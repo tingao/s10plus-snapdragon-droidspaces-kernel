@@ -43,16 +43,17 @@ Use GNU ld. `ld.lld` fails on this tree with
 
 ```sh
 cd <kernel tree>
-export KBUILD_BUILD_USER=builder KBUILD_BUILD_HOST=localhost
 ../build/build-kernel.sh /path/to/toolchain
 ```
 
 The script copies `lineage_beyond2qlte_defconfig`, appends the Droidspaces fragment and the KernelSU
 manual-hook options, applies the patches, builds, and packs an Odin-flashable `boot.img`.
 
-Set `KBUILD_BUILD_USER` and `KBUILD_BUILD_HOST` if you care what the kernel's version string says.
-By default it will contain your own username and machine name, and that string is visible to anyone
-who runs `uname -a` on the phone.
+It sets the three variables that would otherwise record the build machine in the kernel's version
+string: `KBUILD_BUILD_USER`, `KBUILD_BUILD_HOST` and `KBUILD_BUILD_TIMESTAMP`. The defaults are the
+neutral identity and fixed date the released image carries. Override any of them in the environment
+to name your own machine and the real build date instead. Whatever ends up in that string is visible
+to anyone who runs `uname -a` on the phone.
 
 ## KernelSU-Next integration
 
@@ -65,8 +66,12 @@ drivers/Kconfig   : source "drivers/kernelsu/Kconfig"
 drivers/Makefile  : obj-$(CONFIG_KSU) += kernelsu/
 ```
 
-`KSU_VERSION_FALLBACK` is set to **33129** so the built kernel reports a version the v3.1.0 manager
-accepts. If you change it, you must change the manager to match.
+The released kernel reports KernelSU-Next version **33129**, the number the v3.1.0 manager accepts.
+Nothing sets that value by hand: KernelSU-Next's own `kernel/Kbuild` computes it as
+`30000 + <commit count of the KernelSU-Next tree> + 150`, so it depends on which revision of that tree
+you build against. Read the `-- KernelSU-Next version:` line the build prints, and pair the manager to
+whatever it says. A tree with no `.git` directory takes the other branch of the same file and uses
+`KSU_VERSION_FALLBACK`, which is `1` unless you set it.
 
 ## Packing
 
