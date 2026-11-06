@@ -83,10 +83,11 @@ You should still be in Download Mode with Odin open.
 1. In Odin, click AP and select:
 
    ```
-   AP-boot-beyond2qlte-droidspaces.tar.md5
+   AP-boot-beyond2qlte-droidspaces-cve-hardened-v2.tar.md5
    ```
 
-   Load it only in AP. Leave BL, CP and CSC empty.
+   Check it first (`sha256sum` and `python3 build/verify-tarmd5.py <file>`); the expected SHA256 is in
+   the README. Load it only in AP. Leave BL, CP and CSC empty.
 
 2. In the Options tab, tick Auto Reboot and F.Reset Time and untick everything else, in particular
    Nand Erase and Re-Partition. Nand Erase destroys your data.
@@ -134,20 +135,45 @@ With USB debugging on and the phone booted:
 
 ```sh
 adb shell uname -a
-# Linux localhost 4.14.190-... #5 SMP PREEMPT ... aarch64
+# Linux localhost 4.14.190-gd913da1ac #1 SMP PREEMPT 2026-01-01 00:00:00 UTC aarch64
 
 adb shell /system/bin/su -c id
 # uid=0(root) gid=0(root) groups=0(root) context=u:r:ksu:s0
 
-adb shell /system/bin/su -c "zcat /proc/config.gz | grep -E '^CONFIG_(KSU|KSU_MANUAL_HOOK)='"
+adb shell /system/bin/su -c "zcat /proc/config.gz | grep -E '^CONFIG_(KSU|KSU_MANUAL_HOOK|NETFILTER_XT_MATCH_ADDRTYPE)='"
 # CONFIG_KSU=y
 # CONFIG_KSU_MANUAL_HOOK=y
+# CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y
 ```
 
-If `uname -a` still shows the old build date, the flash did not take, so check gate 2 again.
+The v2 release reports **`4.14.190-gd913da1ac`**. If `uname -a` still shows the old build date
+(`4.14.190-gd1d9579ba-dirty` is the stock-ERA custom kernel from v1.0.0), the flash did not take, so
+check gate 2 again.
 
 Then install the KernelSU-Next v3.1.0 manager and open it. It should report `Working` and
 `Hook mode: Manual`. The README explains why that exact version.
+
+## Linux alternative: flash with `dd` (rooted phone)
+
+If the phone already boots and is rooted (KernelSU), you do not need Odin or Download Mode. Flash the
+raw image, which is exactly the 64 MiB boot partition content:
+
+```sh
+sha256sum boot-cve-hardened-v2.img        # f532bd0e…0a8a, 67,108,864 bytes
+
+adb push boot-cve-hardened-v2.img /data/local/tmp/boot.img
+adb shell "su -c 'dd if=/data/local/tmp/boot.img of=/dev/block/by-name/boot bs=4M conv=fsync'"
+adb shell "su -c 'sha256sum /dev/block/by-name/boot'"    # must equal the image sha256
+adb reboot
+```
+
+The project's own `scripts/flash-boot.sh` does exactly this with size/AVB guards, read-back
+verification and a boot-ID change check.
+
+Linux Download-Mode tooling (heimdall, official Samsung `odin4` for Linux) and the complete recovery
+runbook are in [docs/RECOVERY.md](docs/RECOVERY.md). One rule matters there: **one protocol action per
+Download-Mode entry** — the bootloader answers the handshake only once per USB connection, so do not
+"check first, flash second" in the same session.
 
 ## When it goes wrong
 
@@ -163,6 +189,14 @@ Then install the KernelSU-Next v3.1.0 manager and open it. It should report `Wor
 
 ## Going back to stock
 
-Power off, enter Download Mode, and load your own firmware into Odin: `BL` into BL, `AP` into AP,
-`CP` into CP, and `CSC` into CSC. Use `CSC` rather than `HOME_CSC` if you want a clean wipe. Press
-Start. This restores the phone completely, including the bootloader's opinion of your kernel.
+**Quickest:** flash `AP-stock-rollback-beyond2qlte.tar.md5` from the Releases page in Odin's AP
+slot — it is the exact stock boot image the phone shipped with (SHA256 in the README). Or, from a
+rooted phone, `dd` `boot-current-stock-20261106.img` back.
+
+**Full stock firmware:** power off, enter Download Mode, and load your own firmware into Odin:
+`BL` into BL, `AP` into AP, `CP` into CP, and `CSC` into CSC. Use `CSC` rather than `HOME_CSC` if you
+want a clean wipe. Press Start. This restores the phone completely, including the bootloader's
+opinion of your kernel.
+
+If Download Mode and Odin are not available, [docs/RECOVERY.md](docs/RECOVERY.md) has the Linux
+heimdall / `odin4` routes.

@@ -1,0 +1,49 @@
+# Defconfig fragment appended to lineage_beyond2qlte_defconfig for the
+# SM-G9750 hardend baseline kernel.
+#
+# --- What Droidspaces needs (see its Kernel-Configuration documentation) ---
+CONFIG_SYSVIPC=y
+CONFIG_POSIX_MQUEUE=y
+CONFIG_NAMESPACES=y
+CONFIG_PID_NS=y
+CONFIG_UTS_NS=y
+CONFIG_IPC_NS=y
+CONFIG_NET_NS=y
+CONFIG_USER_NS=y
+CONFIG_SECCOMP=y
+CONFIG_SECCOMP_FILTER=y
+CONFIG_CGROUPS=y
+CONFIG_CGROUP_DEVICE=y
+CONFIG_CGROUP_SCHED=y
+CONFIG_CGROUP_FREEZER=y
+CONFIG_CGROUP_PIDS=y
+CONFIG_CGROUP_NET_PRIO=y
+CONFIG_CGROUP_CPUACCT=y
+CONFIG_MEMCG=y
+CONFIG_DEVTMPFS=y
+CONFIG_OVERLAY_FS=y
+CONFIG_VETH=y
+CONFIG_BRIDGE=y
+CONFIG_TMPFS_POSIX_ACL=y
+CONFIG_TMPFS_XATTR=y
+CONFIG_ANDROID_PARANOID_NETWORK=n
+
+# --- KernelSU-Next: manual hooks, because the kprobe hooks are documented as 5.10+ only ---
+CONFIG_KSU=y
+CONFIG_KSU_MANUAL_HOOK=y
+# CONFIG_KSU_KPROBES_HOOK is not set
+
+# --- netfilter match required by dockerd/iptables inside the Droidspaces container ---
+# Stock Samsung kernel shipped this =y; it was missing from our baseline build and
+# found live on-device: dockerd fails with
+#   iptables -t nat -A PREROUTING -m addrtype --dst-type LOCAL -j DOCKER
+#   "Extension addrtype revision 0 not supported / No chain/target/match by that name"
+# which then breaks Portainer and DNAT.
+CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y
+
+# --- IPv6 NAT/masquerade parity with the stock Samsung kernel (droidspaces has IPv6 NAT) ---
+# Only the two masquerade symbols were missing; IP6_NF_IPTABLES/IP6_NF_NAT/NF_NAT_IPV6 were
+# already =y. Deliberately NOT enabling CONFIG_NF_TABLES: leaving nf_tables out removes the
+# whole nf_tables CVE class from this kernel (intentional security divergence from stock).
+CONFIG_NF_NAT_MASQUERADE_IPV6=y
+CONFIG_IP6_NF_TARGET_MASQUERADE=y

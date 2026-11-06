@@ -25,3 +25,6 @@ pack/
 Thumbs.db
 *.swp
 *~
+
+# release assets are uploaded to the GitHub release, not committed
+release-assets/

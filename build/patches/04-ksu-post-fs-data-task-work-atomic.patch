@@ -1,0 +1,74 @@
+diff --git a/kernel/runtime/ksud_integration.c b/kernel/runtime/ksud_integration.c
+index 3d93d659..9ba7fffb 100644
+--- a/kernel/runtime/ksud_integration.c
++++ b/kernel/runtime/ksud_integration.c
+@@ -195,7 +195,17 @@ int ksu_handle_execveat_ksud(int *fd, struct filename **filename_ptr,
+ 	struct filename *filename;
+ 
+ 	static const char app_process[] = "/system/bin/app_process";
+-	static bool first_zygote = true;
++	/*
++	 * One-shot guard for the post-fs-data task_work registration.  It must
++	 * be atomic: two concurrent zygote execve()s used to observe the plain
++	 * bool as true, so both called task_work_add() with the same static
++	 * callback.  The second add linked cb->next to itself, and the next
++	 * task_work_run() then looped forever, panicking the device via the
++	 * software watchdog during boot (observed on SM-G9750 / beyond2qlte:
++	 * 23k "KernelSU: on_post_fs_data already done" in 2 s, then
++	 * "softdog: Initiating panic ... Software Watchdog Timer expired").
++	 */
++	static atomic_t first_zygote = ATOMIC_INIT(1);
+ 
+ 	/* This applies to versions Android 10+ */
+ 	static const char system_bin_init[] = "/system/bin/init";
+@@ -279,20 +289,39 @@ int ksu_handle_execveat_ksud(int *fd, struct filename **filename_ptr,
+ 		}
+ 	}
+ 
+-	if (unlikely(first_zygote && !memcmp(filename->name, app_process,
++	if (unlikely(atomic_read(&first_zygote) &&
++		     !memcmp(filename->name, app_process,
+ 			     sizeof(app_process) - 1) && argv)) {
+ 		char buf[16];
+ 		if (check_argv(*argv, 1, "-Xzygote", buf, sizeof(buf))) {
+-			pr_info("exec zygote, /data prepared, second_stage: %d\n",
+-				init_second_stage_executed);
+-			rcu_read_lock();
+-			struct task_struct *init_task =
+-				rcu_dereference(current->real_parent);
+-			if (init_task)
+-				task_work_add(init_task, &on_post_fs_data_cb, TWA_RESUME);
+-			rcu_read_unlock();
+-			first_zygote = false;
+-			stop_execve_hook();
++			/*
++			 * Claim the one-time registration atomically.  Only the
++			 * thread that flips first_zygote 1->0 may queue the
++			 * static callback, so task_work_add() can never be
++			 * called twice with the same callback_head.
++			 */
++			if (atomic_cmpxchg(&first_zygote, 1, 0) == 1) {
++				pr_info("exec zygote, /data prepared, second_stage: %d\n",
++					init_second_stage_executed);
++				rcu_read_lock();
++				struct task_struct *init_task =
++					rcu_dereference(current->real_parent);
++				if (init_task) {
++					struct callback_head *pending;
++					/*
++					 * Defensive: if a copy is somehow
++					 * still queued, cancel it instead of
++					 * queueing a second one.
++					 */
++					pending = task_work_cancel(init_task,
++								   &on_post_fs_data_cbfun);
++					if (!pending &&
++					    task_work_add(init_task, &on_post_fs_data_cb, TWA_RESUME))
++						pr_warn("KernelSU: failed to queue post-fs-data task_work\n");
++				}
++				rcu_read_unlock();
++				stop_execve_hook();
++			}
+ 		}
+ 	}
+ 
