@@ -28,6 +28,10 @@ First CVE-hardened release. Kernel: `4.14.190-gd913da1ac`.
 
 * `CONFIG_NF_TABLES` remains **disabled** (it was enabled in the stock Samsung config). This
   deliberately removes the entire nf_tables CVE class from the kernel.
+* **Droidspaces runtime v7.1.0** (upstream release `4344dc5`) is the tested runtime for this release:
+  in-place upgrade from v6.6.0 over a running container, verified 3/3 boots clean with the container
+  and Docker autostarting, no config migration. Rollback steps and the tested asset hashes are in the
+  source bundle (`docs/VERIFICATION.md` §8).
 
 ### Fixed (during verification of the would-be v2)
 

@@ -41,7 +41,7 @@ Everything is on the [Releases page](https://github.com/tingao/s10plus-snapdrago
 | `boot-cve-hardened-v2.img` | **Linux / rooted phone** — `dd` flash image (exact 64 MiB boot partition content) | 67,108,864 | `f532bd0e7e356ec6b0af9e366b9f8237496434008fd25a8be5f3a7ba4bad0a8a` |
 | `AP-stock-rollback-beyond2qlte.tar.md5` | **Rollback** — the stock boot the phone shipped with | 67,184,708 | `954de8f498e775319dd342db6a1696416ab41b2942f953a4c0504c3e85ee5801` |
 | `SHA256SUMS` | check any download | — | — |
-| `cve-hardening-v2-source.tar.zst` | every patch, config and build script used for v2 | 143,528 | `cbf1fd235525a0d30685eef2dddcdb95cacc9a3d3d33c7d31b2d63715570781b` |
+| `cve-hardening-v2-source.tar.zst` | every patch, config and build script used for v2 | 155,945 | `140e395628c152112222f541993b51aa20e22424976e968b37f9e8b489992387` |
 
 Check what you downloaded — a truncated AP file is the most common reason Odin refuses one:
 
@@ -64,6 +64,9 @@ Kernel build string after flashing: **`4.14.190-gd913da1ac`**
   or a Linux box with `adb` and a rooted phone (see “Linux / already rooted” below).
 * The [KernelSU-Next **v3.1.0**](https://github.com/KernelSU-Next/KernelSU-Next/releases) manager
   and [Droidspaces](https://github.com/ravindu644/Droidspaces-OSS/releases).
+  **Droidspaces v7.1.0** (release `4344dc5`) is the runtime this release was tested with; v6.6.0
+  works too, and upgrading in place from v6.6.0 to v7.1.0 over a running container needs no config
+  migration (verified).
 
 Install manager **v3.1.0**, not the newest release. This kernel reports KernelSU version **33129**,
 and the manager has to match that version and the UAPI. A newer manager reports the kernel as
@@ -151,6 +154,16 @@ Everything under “must have” should pass; this kernel has the options it ask
 (`CONFIG_NAMESPACES`, `PID_NS`, `UTS_NS`, `IPC_NS`, `NET_NS`, `SECCOMP(_FILTER)`, `DEVTMPFS`,
 `CGROUPS`, `CGROUP_DEVICE`, `VETH`, `BRIDGE`, `OVERLAY_FS`, `USER_NS`, `SYSVIPC`, `POSIX_MQUEUE`,
 `MEMCG`).
+
+**Tested runtime: Droidspaces v7.1.0** (release `4344dc5`, APK versionCode `71001518`, binary built
+2026-10-27) — verified on this kernel with an existing container (`krakow`, Debian 13 + Docker +
+Portainer): 3/3 boots clean, container autostarted, Docker and Portainer up, no config migration.
+The previous runtime, v6.6.0, also works. If you are coming from v6.6.0, the update is: install the
+new APK over the old one (`adb install -r`), copy the new `droidspaces` binary into
+`/data/local/Droidspaces/bin/` (keep `.daemon_mode=1`, keep the `u:object_r:droidspacesd_exec:s0`
+context on it), replace the files in `/data/adb/modules/droidspaces/`, reboot. `service.sh` and
+`post-fs-data.sh` are byte-identical between those versions; `sepolicy.rule` gains a few binder/`anland`
+rules and the container config is unchanged.
 
 Create a container from one of the app's Debian or Ubuntu templates, give it a few GB, and start it.
 

@@ -90,3 +90,32 @@ and check `task_work_add()`'s return. KSU's git history is untouched, so the rep
 * Android userspace/ROM is untouched: the stock firmware's security patch level stays 2023-02-01.
 * Subsystems that only run rarely on this device (some drivers, unusual filesystems) were exercised
   only insofar as the functional matrix reaches them.
+
+## 8. Droidspaces runtime update (v6.6.0 → v7.1.0)
+
+The kernel release was validated together with the current Droidspaces runtime, because a kernel is
+only useful if the container stack on top of it still works.
+
+* Upstream: `ravindu644/Droidspaces-OSS` v7.1.0 (release `4344dc5`, 2026-10-27).
+  APK versionName `7.1.0` / versionCode `71001518`; `droidspaces` binary 478,376 B (SHA256
+  `9ac190cd…`), built 2026-10-27.
+* Update performed **in place** over the existing v6.6.0 runtime (APK installed with `-r`, new binary
+  pushed to `/data/local/Droidspaces/bin/` with the `u:object_r:droidspacesd_exec:s0` context,
+  module files replaced, reboot). Existing container `krakow` (Debian 13 + Docker + Portainer) and
+  its `container.config` were **byte-identical after the update** — no migration.
+* File-level diff: `post-fs-data.sh` and `service.sh` byte-identical; `module.prop` version bumped;
+  `sepolicy.rule` +6 lines (hwservicemanager binder transfer + `anland` rules); busybox unchanged.
+
+| boot | boot ID | boot time | container autostart | Docker/Portainer | previous-boot crash scan | matrix |
+|---|---|---|---|---|---|---|
+| update reboot | `db94771b…` | 61 s | 6 s | up | clean | PASS 28/0/1 |
+| cold #1 | `4d50c332…` | 54 s | 21 s | up | clean | PASS 28/0/1 |
+| cold #2 | `36cb9908…` | 54 s | 21 s | up | clean | PASS 28/0/1 |
+
+The 28-check matrix additionally asserts that the module, the APK and the running binary all report
+v7.1.0. DNAT on 9443/9000 still returns HTTP 200, and the kernel's boot partition SHA256 is unchanged
+(`f532bd0e…`) — the runtime update does not touch the kernel.
+
+Rollback to v6.6.0 is prepared and dry-run tested (reinstall the old APK, restore the old binary and
+module files with their original contexts, reboot). Kernel-side nothing changes, so rollback is
+independent of the kernel release.
